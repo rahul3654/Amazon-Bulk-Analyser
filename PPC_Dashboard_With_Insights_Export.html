@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bulk Sheet Console — Amazon Ads Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+  :root{
+    --bg:#0E1117;
+    --panel:#161B24;
+    --panel-2:#1C222D;
+    --line:#262D3A;
+    --text:#E7EAF0;
+    --muted:#8B93A3;
+    --teal:#22B8A3;
+    --teal-dim:#1A8C7C;
+    --amber:#F0A93C;
+    --rose:#E2627A;
+    --mono:'JetBrains Mono', monospace;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  ::selection{background:var(--teal-dim);}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#12161F,#0E1117);
+    position:sticky;top:0;z-index:50;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--teal),var(--teal-dim));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Sora',sans-serif;font-weight:800;color:#06231F;font-size:15px;
+  }
+  .brand h1{font-family:'Sora',sans-serif;font-size:16px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .brand p{margin:0;font-size:11px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;}
+  .topctrls{display:flex;align-items:center;gap:10px;}
+  .fileLabel{
+    border:1px solid var(--line);background:var(--panel);color:var(--text);
+    padding:9px 14px;border-radius:8px;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;transition:.15s;
+  }
+  .fileLabel:hover{border-color:var(--teal-dim);}
+  .fileLabel input{display:none;}
+  .btn{
+    border:none;background:var(--teal);color:#06231F;font-weight:600;
+    padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:.15s;
+  }
+  .btn:hover{background:#2CD0B9;}
+  .btn.secondary{background:var(--panel-2);color:var(--text);border:1px solid var(--line);}
+  .btn.secondary:hover{border-color:var(--teal-dim);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .meta{font-size:12px;color:var(--muted);margin-left:6px;}
+
+  .shell{display:flex;min-height:calc(100vh - 67px);}
+  .rail{
+    width:212px;border-right:1px solid var(--line);padding:18px 10px;
+    background:#10141C;flex-shrink:0;
+  }
+  .rail button{
+    width:100%;text-align:left;background:none;border:none;color:var(--muted);
+    padding:11px 14px;border-radius:8px;font-size:13.5px;cursor:pointer;
+    display:flex;align-items:center;gap:10px;margin-bottom:2px;font-weight:500;
+    transition:.12s;
+  }
+  .rail button .dot{width:6px;height:6px;border-radius:50%;background:var(--line);flex-shrink:0;}
+  .rail button:hover{background:var(--panel);color:var(--text);}
+  .rail button.active{background:var(--panel-2);color:var(--text);}
+  .rail button.active .dot{background:var(--teal);}
+  .rail .railhead{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:8px 14px 6px;}
+
+  main{flex:1;padding:26px 30px 60px;max-width:1400px;}
+  .empty{
+    margin-top:60px;text-align:center;color:var(--muted);
+  }
+  .empty .big{font-family:'Sora',sans-serif;font-size:22px;color:var(--text);margin-bottom:8px;font-weight:700;}
+  .empty .ic{font-size:40px;margin-bottom:14px;opacity:.5;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  h2.sect{font-family:'Sora',sans-serif;font-size:19px;margin:0 0 4px;font-weight:700;}
+  .sectsub{color:var(--muted);font-size:13px;margin:0 0 18px;}
+
+  .heroRow{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:26px;}
+  .hero{
+    flex:1;min-width:148px;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;
+  }
+  .hero::after{content:'';position:absolute;right:-20px;top:-20px;width:80px;height:80px;
+    background:radial-gradient(circle,rgba(34,184,163,.12),transparent 70%);}
+  .hero .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;}
+  .hero .val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+  .hero .val.teal{color:var(--teal);}
+  .hero .val.amber{color:var(--amber);}
+  .hero .val.rose{color:var(--rose);}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:24px;overflow:hidden;
+  }
+  .panelhead{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid var(--line);
+  }
+  .panelhead h3{margin:0;font-family:'Sora',sans-serif;font-size:14.5px;font-weight:700;}
+  .panelhead .ptag{font-size:11px;color:var(--muted);margin-top:2px;}
+  .miniexport{
+    border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+    padding:6px 11px;border-radius:7px;font-size:11.5px;cursor:pointer;font-weight:500;
+  }
+  .miniexport:hover{color:var(--teal);border-color:var(--teal-dim);}
+
+  .tablewrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    text-align:right;padding:10px 14px;color:var(--muted);font-weight:500;
+    font-size:11px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);
+  }
+  thead th:first-child,thead th.left{text-align:left;}
+  tbody td{
+    padding:9px 14px;text-align:right;white-space:nowrap;
+    border-bottom:1px solid #1C212C;font-family:'JetBrains Mono',monospace;
+    font-variant-numeric:tabular-nums;color:var(--text);
+  }
+  tbody td:first-child,tbody td.left{text-align:left;font-family:'Inter',sans-serif;color:var(--text);font-weight:500;}
+  tbody tr:hover td{background:#1A2029;}
+  tbody tr.totalrow td{font-weight:700;color:var(--teal);border-top:1px solid var(--line);background:#141A22;}
+  .pos{color:var(--teal);}
+  .neg{color:var(--rose);}
+  .barcell{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+  .barcell .bar{height:5px;border-radius:3px;background:var(--teal-dim);min-width:2px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+
+  .tabs2{display:flex;gap:6px;padding:10px 18px 0;}
+  .tabs2 button{
+    background:none;border:none;color:var(--muted);padding:8px 12px;font-size:12.5px;
+    cursor:pointer;border-bottom:2px solid transparent;font-weight:500;
+  }
+  .tabs2 button.active{color:var(--text);border-bottom-color:var(--teal);}
+  .note{font-size:12px;color:var(--muted);padding:12px 18px;border-top:1px solid var(--line);background:#12161E;}
+  .badge{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;background:var(--panel-2);color:var(--muted);margin-left:8px;border:1px solid var(--line);}
+
+  .insightpanel{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;margin-bottom:22px;border-left:3px solid var(--teal-dim);
+  }
+  .insightpanel h4{margin:0 0 12px;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;
+    display:flex;align-items:center;gap:7px;color:var(--text);}
+  .insightpanel h4::before{content:'◆';color:var(--teal);font-size:10px;}
+  .insightpanel ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;}
+  .insightpanel li{font-size:12.5px;line-height:1.55;display:flex;gap:9px;color:var(--text);}
+  .itag{flex-shrink:0;font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.3px;margin-top:1px;white-space:nowrap;height:fit-content;}
+  .itag.obs{background:rgba(34,184,163,.14);color:var(--teal);}
+  .itag.act{background:rgba(240,169,60,.16);color:var(--amber);}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:#2A323F;border-radius:4px;}
+  footer{padding:30px;text-align:center;color:var(--muted);font-size:11.5px;}
+  #brandInput:focus,#compInput:focus{border-color:var(--teal-dim);outline:none;}
+  .intent-brand{color:var(--teal);}
+  .intent-comp{color:var(--amber);}
+  .intent-generic{color:var(--rose);}
+  .intent-pt{color:#A78BFA;}
+  tbody td.intent-brand{color:var(--teal);}
+  tbody tr:hover td.intent-brand{color:var(--teal);}
+  .topctrls input[type=text]::placeholder{color:var(--muted);}
+  tbody td.campcell{
+    max-width:260px;white-space:normal;word-break:break-word;
+    font-family:'Inter',sans-serif;font-size:11px;color:var(--muted);line-height:1.4;
+  }
+  tbody td.matchtypecell{
+    max-width:220px;white-space:normal;word-break:break-word;
+    font-family:'Inter',sans-serif;font-size:11px;color:var(--amber);line-height:1.4;
+  }
+  thead th.left.campcell,thead th.left.matchtypecell{min-width:140px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">PC</div>
+    <div>
+      <h1>Bulk Sheet Console</h1>
+      <p>Amazon Ads Performance Analyzer</p>
+    </div>
+  </div>
+  <div class="topctrls">
+    <span class="meta" id="fileMeta"></span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="text" id="brandInput" placeholder="Your brand name (e.g. baby forest)" value="baby forest"
+        style="background:var(--panel);border:1px solid var(--line);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;width:200px;outline:none;"
+        title="Enter your brand name — used to classify search terms as Brand / Competitor / Generic / Product Targeting">
+      <input type="text" id="compInput" placeholder="Competitors (comma-sep)" value=""
+        style="background:var(--panel);border:1px solid var(--line);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;width:220px;outline:none;"
+        title="Enter competitor brand names separated by commas (e.g. himalaya, johnson, mamaearth)">
+    </div>
+    <label class="fileLabel">
+      📂 Load Bulk File
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+    </label>
+    <button class="btn secondary" id="exportAllBtn" disabled>⬇ Export Full Report + Insights (.xlsx)</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="rail" id="rail">
+    <div class="railhead">Analysis</div>
+    <button data-view="overview" class="active"><span class="dot"></span>Performance Summary</button>
+    <button data-view="campaign"><span class="dot"></span>Campaign Performance</button>
+    <button data-view="targeting"><span class="dot"></span>Targeting Summary</button>
+    <button data-view="placement"><span class="dot"></span>Placement Summary</button>
+    <button data-view="searchterms"><span class="dot"></span>Search Term Analysis</button>
+    <button data-view="portfolio"><span class="dot"></span>Portfolio Summary</button>
+    <button data-view="kwintent"><span class="dot"></span>KW Intent Analysis</button>
+  </div>
+
+  <main>
+    <div id="emptyState" class="empty">
+      <div class="ic">📊</div>
+      <div class="big">Load a bulk sheet to begin</div>
+      <div>Upload the Amazon Ads bulk file (.xlsx) exported from Campaign Manager.<br>Everything below runs locally in your browser — nothing is uploaded anywhere.</div>
+    </div>
+
+    <div id="views" style="display:none;">
+
+      <!-- OVERVIEW -->
+      <div class="view active" id="view-overview">
+        <h2 class="sect">Performance Summary</h2>
+        <p class="sectsub">Account-level totals across Sponsored Products, Sponsored Brands and Sponsored Display, derived from campaign-level rows in the bulk sheet.</p>
+        <div class="heroRow" id="heroRow"></div>
+        <div class="insightpanel" id="insight-overview"></div>
+        <div class="panel">
+          <div class="panelhead">
+            <div><h3>By Ad Product</h3><div class="ptag">Clicks · Impressions · Sales · Units · ACOS · ROAS · CTR · CPC · CVR · Sale Share · Spend Share</div></div>
+            <button class="miniexport" data-export="overview">Export CSV</button>
+          </div>
+          <div class="tablewrap"><table id="tbl-overview"></table></div>
+        </div>
+      </div>
+
+      <!-- CAMPAIGN PERFORMANCE -->
+      <div class="view" id="view-campaign">
+        <h2 class="sect">Campaign Performance</h2>
+        <p class="sectsub">Every campaign across SP, SB and SD, sorted by Spend high to low, with the full metric set.</p>
+        <div class="insightpanel" id="insight-campaign"></div>
+
+        <div class="tabs2" id="campProductTabs">
+          <button class="active" data-camp="SP">Sponsored Products</button>
+          <button data-camp="SB">Sponsored Brands</button>
+          <button data-camp="SD">Sponsored Display</button>
+        </div>
+
+        <div id="camp-SP" class="campblock">
+          <div class="panel">
+            <div class="panelhead"><div><h3>SP Campaigns</h3><div class="ptag">Sorted by Spend, high to low</div></div><button class="miniexport" data-export="spCampPerf">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-spCampPerf"></table></div>
+          </div>
+        </div>
+        <div id="camp-SB" class="campblock" style="display:none;">
+          <div class="panel">
+            <div class="panelhead"><div><h3>SB Campaigns</h3><div class="ptag">Sorted by Spend, high to low</div></div><button class="miniexport" data-export="sbCampPerf">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sbCampPerf"></table></div>
+          </div>
+        </div>
+        <div id="camp-SD" class="campblock" style="display:none;">
+          <div class="panel">
+            <div class="panelhead"><div><h3>SD Campaigns</h3><div class="ptag">Sorted by Spend, high to low</div></div><button class="miniexport" data-export="sdCampPerf">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sdCampPerf"></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARGETING -->
+      <div class="view" id="view-targeting">
+        <h2 class="sect">Targeting Summary</h2>
+        <p class="sectsub">Performance split by ad-product and targeting method: SP Auto (Close / Loose / Substitutes / Complements), SP Manual (Keyword / Product Targeting), SB Keyword, and SD (Audience / Product Targeting).</p>
+        <div class="insightpanel" id="insight-targeting"></div>
+        <div class="panel">
+          <div class="panelhead">
+            <div><h3>Targeting Breakdown</h3><div class="ptag">Shares are relative to total spend/sales across all targeting rows below</div></div>
+            <button class="miniexport" data-export="targeting">Export CSV</button>
+          </div>
+          <div class="tablewrap"><table id="tbl-targeting"></table></div>
+        </div>
+      </div>
+
+      <!-- PLACEMENT -->
+      <div class="view" id="view-placement">
+        <h2 class="sect">Placement Summary</h2>
+        <p class="sectsub">Top of Search (TOS), Rest of Search (ROS), Product Page (PDP) and Amazon Business placement performance — sourced from Sponsored Products placement bid-adjustment rows, the only entity in this bulk export carrying placement-level metrics.</p>
+        <div class="insightpanel" id="insight-placement"></div>
+        <div class="panel">
+          <div class="panelhead">
+            <div><h3>Placement Breakdown</h3><div class="ptag">SP campaigns only — SB/SD bulk rows in this file don't carry placement-level metrics</div></div>
+            <button class="miniexport" data-export="placement">Export CSV</button>
+          </div>
+          <div class="tablewrap"><table id="tbl-placement"></table></div>
+        </div>
+      </div>
+
+      <!-- SEARCH TERMS -->
+      <div class="view" id="view-searchterms">
+        <h2 class="sect">Customer Search Term Analysis</h2>
+        <p class="sectsub">Search terms are de-duplicated (merged and summed across every keyword/targeting clause that triggered them) separately for SP and SB. Amazon does not generate a customer search term report for Sponsored Display, so SD is not included here.</p>
+        <div class="insightpanel" id="insight-searchterms"></div>
+
+        <div class="tabs2" id="stProductTabs">
+          <button class="active" data-st="SP">Sponsored Products</button>
+          <button data-st="SB">Sponsored Brands</button>
+        </div>
+
+        <div id="st-SP" class="stblock">
+          <div class="panel">
+            <div class="panelhead"><div><h3>Top ROAS Search Terms <span class="badge">orders &gt; 0</span></h3></div><button class="miniexport" data-export="sp_topRoas">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sp_topRoas"></table></div>
+          </div>
+          <div class="panel">
+            <div class="panelhead"><div><h3>Top Sales Search Terms</h3></div><button class="miniexport" data-export="sp_topSales">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sp_topSales"></table></div>
+          </div>
+          <div class="panel">
+            <div class="panelhead"><div><h3>Wasted Spend Search Terms <span class="badge">0 orders</span></h3></div><button class="miniexport" data-export="sp_wasted">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sp_wasted"></table></div>
+          </div>
+        </div>
+
+        <div id="st-SB" class="stblock" style="display:none;">
+          <div class="panel">
+            <div class="panelhead"><div><h3>Top ROAS Search Terms <span class="badge">orders &gt; 0</span></h3></div><button class="miniexport" data-export="sb_topRoas">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sb_topRoas"></table></div>
+          </div>
+          <div class="panel">
+            <div class="panelhead"><div><h3>Top Sales Search Terms</h3></div><button class="miniexport" data-export="sb_topSales">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sb_topSales"></table></div>
+          </div>
+          <div class="panel">
+            <div class="panelhead"><div><h3>Wasted Spend Search Terms <span class="badge">0 orders</span></h3></div><button class="miniexport" data-export="sb_wasted">Export CSV</button></div>
+            <div class="tablewrap"><table id="tbl-sb_wasted"></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PORTFOLIO -->
+      <div class="view" id="view-portfolio">
+        <h2 class="sect">Portfolio Summary</h2>
+        <p class="sectsub">Campaign-level performance rolled up by Portfolio, joined from the Portfolios sheet.</p>
+        <div class="insightpanel" id="insight-portfolio"></div>
+        <div class="panel">
+          <div class="panelhead">
+            <div><h3>By Portfolio</h3><div class="ptag">Across SP + SB + SD campaigns</div></div>
+            <button class="miniexport" data-export="portfolio">Export CSV</button>
+          </div>
+          <div class="tablewrap"><table id="tbl-portfolio"></table></div>
+        </div>
+      </div>
+
+      <!-- KW INTENT ANALYSIS -->
+      <div class="view" id="view-kwintent">
+        <h2 class="sect">Keyword Intent Analysis</h2>
+        <p class="sectsub">Search terms classified into <strong style="color:var(--teal)">Brand</strong>, <strong style="color:var(--amber)">Competitor</strong>, <strong style="color:var(--rose)">Generic</strong>, and <strong style="color:#A78BFA">Product Targeting</strong> buckets — for SP and SB separately. Brand name and competitor names are taken from the inputs in the top bar. Update them and reload the file to re-classify.</p>
+        <div class="insightpanel" id="insight-kwintent"></div>
+
+        <!-- PIVOT TABLE -->
+        <div class="panel" style="margin-bottom:24px;">
+          <div class="panelhead">
+            <div><h3>Intent Pivot — SP &amp; SB Combined</h3><div class="ptag">Aggregated metrics by keyword intent category</div></div>
+            <button class="miniexport" data-export="kwPivot">Export CSV</button>
+          </div>
+          <div class="tablewrap"><table id="tbl-kwPivot"></table></div>
+        </div>
+
+        <div class="tabs2" id="kwProductTabs">
+          <button class="active" data-kw="SP">Sponsored Products</button>
+          <button data-kw="SB">Sponsored Brands</button>
+        </div>
+
+        <div id="kw-SP" class="kwblock">
+          <div class="grid2">
+            <div class="panel">
+              <div class="panelhead"><div><h3>🏷️ Brand Keywords <span class="badge" id="sp-brand-count">SP</span></h3><div class="ptag">Contains your brand name or spelling variants</div></div><button class="miniexport" data-export="sp_brand">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sp_brand"></table></div>
+            </div>
+            <div class="panel">
+              <div class="panelhead"><div><h3>⚔️ Competitor Keywords <span class="badge" id="sp-comp-count">SP</span></h3><div class="ptag">Contains competitor brand names</div></div><button class="miniexport" data-export="sp_comp">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sp_comp"></table></div>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="panel">
+              <div class="panelhead"><div><h3>🔍 Generic Keywords <span class="badge" id="sp-generic-count">SP</span></h3><div class="ptag">Category/product searches without brand names</div></div><button class="miniexport" data-export="sp_generic">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sp_generic"></table></div>
+            </div>
+            <div class="panel">
+              <div class="panelhead"><div><h3>📦 Product Targeting <span class="badge" id="sp-pt-count">SP</span></h3><div class="ptag">ASIN searches — product page targeting</div></div><button class="miniexport" data-export="sp_pt">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sp_pt"></table></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="kw-SB" class="kwblock" style="display:none;">
+          <div class="grid2">
+            <div class="panel">
+              <div class="panelhead"><div><h3>🏷️ Brand Keywords <span class="badge" id="sb-brand-count">SB</span></h3><div class="ptag">Contains your brand name or spelling variants</div></div><button class="miniexport" data-export="sb_brand">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sb_brand"></table></div>
+            </div>
+            <div class="panel">
+              <div class="panelhead"><div><h3>⚔️ Competitor Keywords <span class="badge" id="sb-comp-count">SB</span></h3><div class="ptag">Contains competitor brand names</div></div><button class="miniexport" data-export="sb_comp">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sb_comp"></table></div>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="panel">
+              <div class="panelhead"><div><h3>🔍 Generic Keywords <span class="badge" id="sb-generic-count">SB</span></h3><div class="ptag">Category/product searches without brand names</div></div><button class="miniexport" data-export="sb_generic">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sb_generic"></table></div>
+            </div>
+            <div class="panel">
+              <div class="panelhead"><div><h3>📦 Product Targeting <span class="badge" id="sb-pt-count">SB</span></h3><div class="ptag">ASIN searches — product page targeting</div></div><button class="miniexport" data-export="sb_pt">Export CSV</button></div>
+              <div class="tablewrap"><table id="tbl-sb_pt"></table></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<footer>Runs 100% locally in your browser. No data leaves this page.</footer>
+
+<script>
+/* ============================== UTIL ============================== */
+const fmt = {
+  int:(n)=> Math.round(n).toLocaleString('en-IN'),
+  cur:(n)=> '₹'+ (n||0).toLocaleString('en-IN',{maximumFractionDigits:0}),
+  pct:(n)=> (n||0).toFixed(2)+'%',
+  num2:(n)=> (n||0).toFixed(2),
+};
+function num(v){ if(v===null||v===undefined||v==='') return 0; const n = typeof v==='number'? v : parseFloat(v); return isNaN(n)?0:n; }
+function safeStr(v){ return v===null||v===undefined? '' : String(v).trim(); }
+function downloadBlob(content, filename, type){
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ============================== STATE ============================== */
+let DATA = {}; // holds all computed tables for export
+
+/* ============================== METRIC HELPERS ============================== */
+function sumRows(rows){
+  const o = {impressions:0,clicks:0,spend:0,sales:0,orders:0,units:0};
+  rows.forEach(r=>{
+    o.impressions += num(r['Impressions']);
+    o.clicks      += num(r['Clicks']);
+    o.spend       += num(r['Spend']);
+    o.sales        += num(r['Sales']);
+    o.orders       += num(r['Orders']);
+    o.units        += num(r['Units']);
+  });
+  return o;
+}
+function derive(o){
+  return {
+    ...o,
+    ctr:  o.impressions? o.clicks/o.impressions*100 : 0,
+    cpc:  o.clicks? o.spend/o.clicks : 0,
+    cvr:  o.clicks? o.orders/o.clicks*100 : 0,
+    acos: o.sales? o.spend/o.sales*100 : 0,
+    roas: o.spend? o.sales/o.spend : 0,
+  };
+}
+function withShares(arr){
+  const totSales = arr.reduce((s,a)=>s+a.sales,0);
+  const totSpend = arr.reduce((s,a)=>s+a.spend,0);
+  arr.forEach(a=>{
+    a.saleShare = totSales? a.sales/totSales*100 : 0;
+    a.spendShare = totSpend? a.spend/totSpend*100 : 0;
+  });
+  return arr;
+}
+function buildRow(label, rows){
+  return {label, ...derive(sumRows(rows))};
+}
+
+const METRIC_COLS = [
+  {k:'label',h:'',cls:'left'},
+  {k:'impressions',h:'Impressions',f:fmt.int},
+  {k:'clicks',h:'Clicks',f:fmt.int},
+  {k:'spend',h:'Spend',f:fmt.cur},
+  {k:'sales',h:'Sales',f:fmt.cur},
+  {k:'orders',h:'Orders',f:fmt.int},
+  {k:'units',h:'Units',f:fmt.int},
+  {k:'ctr',h:'CTR',f:fmt.pct},
+  {k:'cpc',h:'CPC',f:fmt.cur},
+  {k:'cvr',h:'CVR',f:fmt.pct},
+  {k:'acos',h:'ACOS',f:fmt.pct},
+  {k:'roas',h:'ROAS',f:fmt.num2},
+  {k:'saleShare',h:'Sale Share',f:fmt.pct},
+  {k:'spendShare',h:'Spend Share',f:fmt.pct},
+];
+
+function renderTable(elId, rows, cols, opts={}){
+  const el = document.getElementById(elId);
+  let thead = '<thead><tr>'+cols.map(c=>`<th class="${c.cls||''}">${c.h}</th>`).join('')+'</tr></thead>';
+  let tbody = '<tbody>'+rows.map((r,i)=>{
+    const isTotal = opts.totalIndex!==undefined && i===opts.totalIndex;
+    return `<tr class="${isTotal?'totalrow':''}">`+cols.map(c=>{
+      const v = r[c.k];
+      const out = c.f? c.f(v) : (v===undefined? '' : v);
+      return `<td class="${c.cls||''}">${out}</td>`;
+    }).join('')+'</tr>';
+  }).join('')+'</tbody>';
+  el.innerHTML = thead+tbody;
+}
+
+function exportCSV(rows, cols, filename){
+  const header = cols.map(c=>c.h||c.k).join(',');
+  const lines = rows.map(r=> cols.map(c=>{
+    let v = r[c.k];
+    if(typeof v === 'number') v = v.toFixed(2);
+    v = (v===undefined||v===null)? '' : String(v).replace(/,/g,' ');
+    return v;
+  }).join(','));
+  downloadBlob([header,...lines].join('\n'), filename, 'text/csv');
+}
+
+/* ============================== KW INTENT CLASSIFICATION ============================== */
+// Generate brand spelling variations automatically
+function getBrandVariants(brandName) {
+  if (!brandName) return [];
+  const b = brandName.toLowerCase().trim();
+  const variants = new Set([b]);
+  // no-space version
+  variants.add(b.replace(/\s+/g,''));
+  // common misspellings: double letters, swap letters
+  const words = b.split(/\s+/);
+  // swap individual word variations
+  words.forEach(w => {
+    // missing a letter in each position
+    for(let i=0;i<w.length;i++) variants.add(words.map((wd,wi)=> wi===words.indexOf(w) ? w.slice(0,i)+w.slice(i+1) : wd).join(' ').trim());
+    // double a letter
+    for(let i=0;i<w.length;i++) variants.add(words.map((wd,wi)=> wi===words.indexOf(w) ? w.slice(0,i)+w[i]+w.slice(i) : wd).join(' ').trim());
+    // common letter swaps: e->a, a->e, o->0, s->z, ph->f, f->ph
+    const swapMap = {e:'a',a:'e',s:'z',z:'s',c:'k',k:'c'};
+    Object.entries(swapMap).forEach(([from,to])=>{
+      if(w.includes(from)) variants.add(words.map((wd,wi)=> wi===words.indexOf(w) ? wd.replace(new RegExp(from,'g'),to) : wd).join(' ').trim());
+    });
+  });
+  // specific known variants for "forest"
+  if(b.includes('forest')) { variants.add(b.replace('forest','forrest')); variants.add(b.replace('forest','forset')); variants.add(b.replace('forest','fores')); }
+  if(b.includes('baby')) { variants.add(b.replace('baby','beby')); variants.add(b.replace('baby','baaby')); variants.add(b.replace('baby','babi')); }
+  return Array.from(variants).filter(v=>v.length>1);
+}
+
+function getCompVariants(compNamesStr) {
+  if (!compNamesStr || !compNamesStr.trim()) return [];
+  const comps = compNamesStr.split(',').map(c=>c.trim().toLowerCase()).filter(Boolean);
+  const all = [];
+  comps.forEach(c => {
+    all.push(c);
+    all.push(c.replace(/\s+/g,''));
+    // add common misspelling
+    if(c.includes('himalaya')) { all.push('himalya','himalayas'); }
+    if(c.includes('johnson')) { all.push('jhonson','johnon','jhonson'); }
+    if(c.includes('mamaearth')) { all.push('mama earth','mamearth'); }
+    if(c.includes('sebamed')) { all.push('sebamed','ceamed'); }
+    if(c.includes('cetaphil')) { all.push('cetaphile','cetaphile'); }
+    if(c.includes('chicco')) { all.push('chico'); }
+    if(c.includes('mee mee')) { all.push('meemee','mee-mee'); }
+  });
+  return [...new Set(all)].filter(v=>v.length>1);
+}
+
+const ASIN_RE = /^b0[a-z0-9]{8}$/i;
+
+function classifyTerm(term, brandVariants, compVariants) {
+  const t = term.toLowerCase().trim();
+  // Product targeting: pure ASIN search
+  if (ASIN_RE.test(t)) return 'product';
+  // Brand: contains any brand variant
+  if (brandVariants.some(v => t.includes(v))) return 'brand';
+  // Competitor: contains any competitor variant
+  if (compVariants.length && compVariants.some(v => v && t.includes(v))) return 'comp';
+  // Generic
+  return 'generic';
+}
+
+function classifyTerms(terms, brandVariants, compVariants) {
+  return terms.map(t => ({...t, intent: classifyTerm(t.label, brandVariants, compVariants)}));
+}
+
+function buildPivot(spClassified, sbClassified) {
+  const cats = ['brand','comp','generic','product'];
+  const labels = {brand:'🏷️ Brand', comp:'⚔️ Competitor', generic:'🔍 Generic', product:'📦 Product Targeting'};
+
+  function agg(rows) {
+    return derive(rows.reduce((acc,r)=>({
+      impressions:acc.impressions+(r.impressions||0),
+      clicks:acc.clicks+(r.clicks||0),
+      spend:acc.spend+(r.spend||0),
+      sales:acc.sales+(r.sales||0),
+      orders:acc.orders+(r.orders||0),
+      units:acc.units+(r.units||0),
+    }),{impressions:0,clicks:0,spend:0,sales:0,orders:0,units:0}));
+  }
+
+  // Match type breakdown per category (SP + SB combined)
+  function matchTypeBreakdown(terms) {
+    const mtMap = {};
+    terms.forEach(t => {
+      const parts = (t.matchType||'Auto').split(' | ');
+      parts.forEach(mt => {
+        mt = mt.trim();
+        if(!mtMap[mt]) mtMap[mt] = 0;
+        mtMap[mt]++;
+      });
+    });
+    return Object.entries(mtMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v})`).join(', ');
+  }
+
+  function pivotFor(terms, tag) {
+    return cats.map(cat => {
+      const rows = terms.filter(t=>t.intent===cat);
+      return {label: labels[cat], adType: tag, termCount: rows.length, matchTypes: matchTypeBreakdown(rows), ...agg(rows)};
+    });
+  }
+  const spRows = pivotFor(spClassified, 'SP');
+  const sbRows = pivotFor(sbClassified, 'SB');
+
+  // Combined pivot
+  const combined = cats.map(cat => {
+    const spR = spRows.find(r=>r.label===labels[cat]);
+    const sbR = sbRows.find(r=>r.label===labels[cat]);
+    const allTerms = [...spClassified.filter(t=>t.intent===cat), ...sbClassified.filter(t=>t.intent===cat)];
+    const combinedAgg = derive({
+      impressions:(spR.impressions||0)+(sbR.impressions||0),
+      clicks:(spR.clicks||0)+(sbR.clicks||0),
+      spend:(spR.spend||0)+(sbR.spend||0),
+      sales:(spR.sales||0)+(sbR.sales||0),
+      orders:(spR.orders||0)+(sbR.orders||0),
+      units:(spR.units||0)+(sbR.units||0),
+    });
+    return {
+      label: labels[cat],
+      spTerms: spR.termCount,
+      sbTerms: sbR.termCount,
+      totalTerms: spR.termCount + sbR.termCount,
+      matchTypes: matchTypeBreakdown(allTerms),
+      ...combinedAgg
+    };
+  });
+
+  const totAgg = derive({
+    impressions:combined.reduce((s,r)=>s+(r.impressions||0),0),
+    clicks:combined.reduce((s,r)=>s+(r.clicks||0),0),
+    spend:combined.reduce((s,r)=>s+(r.spend||0),0),
+    sales:combined.reduce((s,r)=>s+(r.sales||0),0),
+    orders:combined.reduce((s,r)=>s+(r.orders||0),0),
+    units:combined.reduce((s,r)=>s+(r.units||0),0),
+  });
+  combined.push({label:'Total', spTerms:'—', sbTerms:'—', totalTerms:'—', matchTypes:'—', ...totAgg});
+  return {combined, spRows, sbRows};
+}
+
+function genKWIntentInsights(pivot, brandName) {
+  const items = [];
+  const real = pivot.filter(r=>r.label!=='Total' && r.spend>0);
+  if(!real.length) return [{type:'obs', text:'Enter your brand name in the top bar and re-load the file to see keyword intent insights.'}];
+  const brandR = real.find(r=>r.label.includes('Brand'));
+  const genericR = real.find(r=>r.label.includes('Generic'));
+  const compR = real.find(r=>r.label.includes('Competitor'));
+  const ptR = real.find(r=>r.label.includes('Product'));
+  const totalSpend = real.reduce((s,r)=>s+r.spend,0);
+  const totalSales = real.reduce((s,r)=>s+r.sales,0);
+
+  if(brandR && brandR.spend>0) {
+    items.push({type:'obs', text:`Brand keywords account for ${fmt.pct(brandR.spend/totalSpend*100)} of total spend and ${fmt.pct(brandR.spend?brandR.spend/brandR.sales*100:0)} ACOS — usually the most efficient bucket. ${brandR.roas>5?'Strong ROAS at '+fmt.num2(brandR.roas)+'x.':''}`});
+    if(brandR.acos>20) items.push({type:'act', text:`Brand keyword ACOS is ${fmt.pct(brandR.acos)} — check if competitors are bidding on your brand terms and if your bids are too aggressive on already-loyal traffic.`});
+  }
+  if(genericR && genericR.spend>0) {
+    items.push({type:'obs', text:`Generic keywords drive ${fmt.pct(genericR.spend/totalSpend*100)} of spend with ${fmt.pct(genericR.acos)} ACOS — the discovery engine for new customers. ROAS: ${fmt.num2(genericR.roas)}x.`});
+    if(genericR.acos > 40) items.push({type:'act', text:`Generic keyword ACOS at ${fmt.pct(genericR.acos)} is high — harvest the top-converting generic search terms from this bucket and move them to dedicated exact-match campaigns.`});
+  }
+  if(compR && compR.spend>0) {
+    if(compR.acos>50 || compR.roas<1) items.push({type:'act', text:`Competitor keywords are spending ${fmt.cur(compR.spend)} at ${fmt.pct(compR.acos)} ACOS / ${fmt.num2(compR.roas)}x ROAS — poor efficiency. Consider pausing or reducing bids on competitor terms unless brand awareness is the goal.`});
+    else items.push({type:'obs', text:`Competitor keyword ACOS is ${fmt.pct(compR.acos)} — if your product has a clear USP vs. these brands, maintain this bucket as a conquest strategy.`});
+  }
+  if(ptR && ptR.spend>0) {
+    items.push({type:'obs', text:`Product Targeting (ASIN searches) contributes ${fmt.cur(ptR.sales)} in sales at ${fmt.num2(ptR.roas)}x ROAS — ${ptR.roas>genericR?.roas?'outperforming generic':'underperforming vs generic'} terms.`});
+  }
+  // Check if brand name was set
+  if(!brandName || brandName.trim()==='') items.push({type:'act', text:'Set your brand name in the top-bar input and reload your file to activate accurate classification.'});
+  return items;
+}
+
+/* ============================== PARSE & COMPUTE ============================== */
+function sheetJSON(wb, name){
+  const ws = wb.Sheets[name];
+  if(!ws) return [];
+  return XLSX.utils.sheet_to_json(ws, {defval:null});
+}
+
+function computeAll(wb){
+  const portfolioRows = sheetJSON(wb,'Portfolios');
+  const spRows = sheetJSON(wb,'Sponsored Products Campaigns');
+  const sbRows = sheetJSON(wb,'Sponsored Brands Campaigns');
+  const sdRows = sheetJSON(wb,'Sponsored Display Campaigns');
+  const spST   = sheetJSON(wb,'SP Search Term Report');
+  const sbST   = sheetJSON(wb,'SB Search Term Report');
+
+  const portfolioMap = new Map();
+  portfolioRows.forEach(r=> portfolioMap.set(String(r['Portfolio ID']), r['Portfolio Name']));
+
+  const spCampaignRows = spRows.filter(r=>r['Entity']==='Campaign');
+  const sbCampaignRows = sbRows.filter(r=>r['Entity']==='Campaign');
+  const sdCampaignRows = sdRows.filter(r=>r['Entity']==='Campaign');
+
+  const spCampMap = new Map();
+  spCampaignRows.forEach(r=> spCampMap.set(r['Campaign ID'], r['Targeting Type']));
+
+  /* ---------- OVERVIEW ---------- */
+  const overviewRows = withShares([
+    buildRow('Sponsored Products', spCampaignRows),
+    buildRow('Sponsored Brands', sbCampaignRows),
+    buildRow('Sponsored Display', sdCampaignRows),
+  ]);
+  const totalRow = buildRow('Total', [...spCampaignRows, ...sbCampaignRows, ...sdCampaignRows]);
+  totalRow.saleShare = 100; totalRow.spendShare = 100;
+  overviewRows.push(totalRow);
+
+  /* ---------- TARGETING ---------- */
+  const spAuto = spRows.filter(r=> r['Entity']==='Product Targeting' && spCampMap.get(r['Campaign ID'])==='Auto');
+  const expr = (r)=> safeStr(r['Product Targeting Expression']).toLowerCase();
+  const spAutoClose  = spAuto.filter(r=> expr(r)==='close-match');
+  const spAutoLoose  = spAuto.filter(r=> expr(r)==='loose-match');
+  const spAutoSubs   = spAuto.filter(r=> expr(r)==='substitutes');
+  const spAutoComp   = spAuto.filter(r=> expr(r)==='complements');
+  const spManualKW   = spRows.filter(r=> r['Entity']==='Keyword' && ['Broad','Phrase','Exact'].includes(r['Match Type']));
+  const spManualPT   = spRows.filter(r=> r['Entity']==='Product Targeting' && spCampMap.get(r['Campaign ID'])==='Manual');
+  const sbKW         = sbRows.filter(r=> r['Entity']==='Keyword' && ['Broad','Phrase','Exact'].includes(r['Match Type']));
+  const sdTargeting  = sdRows.filter(r=> r['Entity']==='Audience Targeting');
+  const sdAudience   = sdTargeting.filter(r=> !safeStr(r['Targeting Expression']).toLowerCase().startsWith('asin'));
+  const sdProduct    = sdTargeting.filter(r=> safeStr(r['Targeting Expression']).toLowerCase().startsWith('asin'));
+
+  const targetingRows = withShares([
+    buildRow('SP — Auto: Close Match', spAutoClose),
+    buildRow('SP — Auto: Loose Match', spAutoLoose),
+    buildRow('SP — Auto: Substitutes', spAutoSubs),
+    buildRow('SP — Auto: Complements', spAutoComp),
+    buildRow('SP — Manual: Keyword Targeting', spManualKW),
+    buildRow('SP — Manual: Product Targeting', spManualPT),
+    buildRow('SB — Keyword Targeting', sbKW),
+    buildRow('SD — Audience Targeting', sdAudience),
+    buildRow('SD — Product Targeting', sdProduct),
+  ]);
+  const targetingTotalRow = buildRow('Total', [
+    ...spAutoClose, ...spAutoLoose, ...spAutoSubs, ...spAutoComp,
+    ...spManualKW, ...spManualPT, ...sbKW, ...sdAudience, ...sdProduct,
+  ]);
+  targetingTotalRow.saleShare = 100; targetingTotalRow.spendShare = 100;
+  targetingRows.push(targetingTotalRow);
+
+  /* ---------- PLACEMENT ---------- */
+  const placementRowsRaw = spRows.filter(r=> r['Entity']==='Bidding Adjustment' && r['Placement']);
+  const placeMap = {
+    'Placement Top':'Top of Search (TOS)',
+    'Placement Rest Of Search':'Rest of Search (ROS)',
+    'Placement Product Page':'Product Page (PDP)',
+    'Placement Amazon Business':'Amazon Business',
+  };
+  const placeGroups = {};
+  placementRowsRaw.forEach(r=>{
+    const label = placeMap[r['Placement']] || r['Placement'];
+    (placeGroups[label] = placeGroups[label]||[]).push(r);
+  });
+  const placementRows = withShares(Object.keys(placeGroups).map(label=> buildRow(label, placeGroups[label])));
+
+  /* ---------- SEARCH TERMS ---------- */
+  function dedupeTerms(rows){
+    const map = new Map();
+    rows.forEach(r=>{
+      const term = safeStr(r['Customer Search Term']).toLowerCase();
+      if(!term || term==='*') return;
+      if(!map.has(term)) map.set(term, []);
+      map.get(term).push(r);
+    });
+    return Array.from(map.entries()).map(([term, rs])=>{
+      // Collect unique match types across all rows for this term
+      const matchTypes = new Set();
+      const campaigns = new Set();
+      rs.forEach(r=>{
+        const mt = safeStr(r['Match Type']);
+        const pt = safeStr(r['Product Targeting Expression']).toLowerCase();
+        if(mt && mt!=='null') {
+          matchTypes.add(mt);
+        } else if(pt && pt!=='null') {
+          // Auto targeting — map PT expression to readable label
+          if(pt==='close-match') matchTypes.add('Auto – Close Match');
+          else if(pt==='loose-match') matchTypes.add('Auto – Loose Match');
+          else if(pt==='substitutes') matchTypes.add('Auto – Substitutes');
+          else if(pt==='complements') matchTypes.add('Auto – Complements');
+          else if(pt.startsWith('asin=') || pt.startsWith('category=')) matchTypes.add('Product Targeting');
+          else matchTypes.add('Auto');
+        } else {
+          matchTypes.add('Auto');
+        }
+        const camp = safeStr(r['Campaign Name (Informational only)']);
+        if(camp) campaigns.add(camp);
+      });
+      const matchTypeStr = Array.from(matchTypes).join(' | ');
+      const campaignStr = Array.from(campaigns).join(' | ');
+      return {
+        label: term,
+        matchType: matchTypeStr || 'Auto',
+        campaigns: campaignStr,
+        ...derive(sumRows(rs))
+      };
+    });
+  }
+  const spTerms = dedupeTerms(spST);
+  const sbTerms = dedupeTerms(sbST);
+
+  function topRoas(terms){ return terms.filter(t=>t.orders>0).sort((a,b)=>b.roas-a.roas).slice(0,40); }
+  function topSales(terms){ return terms.filter(t=>t.sales>0).sort((a,b)=>b.sales-a.sales).slice(0,40); }
+  function wasted(terms){ return terms.filter(t=>t.orders===0 && t.spend>0).sort((a,b)=>b.spend-a.spend).slice(0,60); }
+
+  /* ---------- CAMPAIGN PERFORMANCE ---------- */
+  function campRows(rows){
+    const out = rows.map(r=>{
+      const name = safeStr(r['Campaign Name']) || safeStr(r['Campaign Name (Informational only)']) || 'Unnamed Campaign';
+      return buildRow(name, [r]);
+    });
+    withShares(out);
+    out.sort((a,b)=> b.spend - a.spend);
+    const tot = buildRow('Total', rows);
+    tot.saleShare = 100; tot.spendShare = 100;
+    out.push(tot);
+    return out;
+  }
+  const spCampPerf = campRows(spCampaignRows);
+  const sbCampPerf = campRows(sbCampaignRows);
+  const sdCampPerf = campRows(sdCampaignRows);
+
+  /* ---------- PORTFOLIO ---------- */
+  const allCampaigns = [...spCampaignRows, ...sbCampaignRows, ...sdCampaignRows];
+  const portGroups = {};
+  allCampaigns.forEach(r=>{
+    const pid = r['Portfolio ID'];
+    const label = pid? (portfolioMap.get(String(pid)) || 'Unnamed Portfolio') : 'No Portfolio';
+    (portGroups[label] = portGroups[label]||[]).push(r);
+  });
+  const portfolioRowsOut = withShares(Object.keys(portGroups).map(label=> buildRow(label, portGroups[label])))
+    .sort((a,b)=> b.spend-a.spend);
+  const portfolioTotalRow = buildRow('Total', allCampaigns);
+  portfolioTotalRow.saleShare = 100; portfolioTotalRow.spendShare = 100;
+  portfolioRowsOut.push(portfolioTotalRow);
+
+  /* ---------- KW INTENT CLASSIFICATION ---------- */
+  const brandName = (document.getElementById('brandInput')?.value || 'baby forest').trim();
+  const compNamesStr = (document.getElementById('compInput')?.value || '').trim();
+  const brandVariants = getBrandVariants(brandName);
+  const compVariants = getCompVariants(compNamesStr);
+
+  const spClassified = classifyTerms(spTerms, brandVariants, compVariants);
+  const sbClassified = classifyTerms(sbTerms, brandVariants, compVariants);
+
+  const kwIntentPivot = buildPivot(spClassified, sbClassified);
+
+  function filterIntent(terms, intent) {
+    return terms.filter(t=>t.intent===intent).sort((a,b)=>b.spend-a.spend);
+  }
+
+  return {
+    overviewRows, targetingRows, placementRows,
+    spCampPerf, sbCampPerf, sdCampPerf,
+    sp_topRoas: topRoas(spTerms), sp_topSales: topSales(spTerms), sp_wasted: wasted(spTerms),
+    sb_topRoas: topRoas(sbTerms), sb_topSales: topSales(sbTerms), sb_wasted: wasted(sbTerms),
+    portfolioRows: portfolioRowsOut,
+    totals: totalRow,
+    // KW Intent
+    kwPivot: kwIntentPivot.combined,
+    sp_brand: filterIntent(spClassified,'brand'),
+    sp_comp:  filterIntent(spClassified,'comp'),
+    sp_generic: filterIntent(spClassified,'generic'),
+    sp_pt:    filterIntent(spClassified,'product'),
+    sb_brand: filterIntent(sbClassified,'brand'),
+    sb_comp:  filterIntent(sbClassified,'comp'),
+    sb_generic: filterIntent(sbClassified,'generic'),
+    sb_pt:    filterIntent(sbClassified,'product'),
+    brandVariants,
+    brandName,
+  };
+}
+
+/* ============================== INSIGHTS ENGINE ============================== */
+function renderInsights(elId, items){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  if(!items.length){ el.innerHTML = '<h4>Observations & Actionables</h4><ul><li><span class="itag obs">Insight</span><span>Not enough data in this section to generate observations.</span></li></ul>'; return; }
+  el.innerHTML = '<h4>Observations & Actionables</h4><ul>'+items.map(i=>
+    `<li><span class="itag ${i.type}">${i.type==='act'?'Action':'Insight'}</span><span>${i.text}</span></li>`
+  ).join('')+'</ul>';
+}
+
+function genOverviewInsights(rows, total){
+  const items = [];
+  const real = rows.filter(r=>r.label!=='Total' && r.spend>0);
+  if(!real.length) return items;
+  const bySpend = [...real].sort((a,b)=>b.spend-a.spend);
+  items.push({type:'obs', text:`${bySpend[0].label} drives the largest share of spend (${fmt.pct(bySpend[0].spendShare)}) and accounts for ${fmt.pct(bySpend[0].saleShare)} of sales.`});
+  const byAcos = [...real].sort((a,b)=>b.acos-a.acos);
+  const worst = byAcos[0], best = byAcos[byAcos.length-1];
+  if(worst.label !== best.label){
+    items.push({type:'act', text:`${worst.label} runs the highest ACOS at ${fmt.pct(worst.acos)} — review its targeting and search terms before adding more budget there.`});
+    items.push({type:'obs', text:`${best.label} is the most efficient channel at ${fmt.pct(best.acos)} ACOS / ${fmt.num2(best.roas)}x ROAS — a good candidate for incremental budget.`});
+  }
+  if(total){
+    if(total.acos >= 30) items.push({type:'act', text:`Blended account ACOS is ${fmt.pct(total.acos)}. If your breakeven ACOS is below this, prioritise the Search Term and Targeting tabs to cut waste.`});
+    else items.push({type:'obs', text:`Blended account ACOS of ${fmt.pct(total.acos)} is in a generally healthy range for most categories.`});
+  }
+  return items;
+}
+
+function genCampaignInsights(spRows, sbRows, sdRows){
+  const items = [];
+  const tag = (rows, label) => rows.filter(r=>r.label!=='Total').map(r=>({...r, src:label}));
+  const all = [...tag(spRows,'SP'), ...tag(sbRows,'SB'), ...tag(sdRows,'SD')];
+  if(!all.length) return items;
+  const zeroOrder = all.filter(r=>r.orders===0 && r.spend>0).sort((a,b)=>b.spend-a.spend);
+  if(zeroOrder.length){
+    const sumSpend = zeroOrder.reduce((s,a)=>s+a.spend,0);
+    items.push({type:'act', text:`${zeroOrder.length} campaign(s) spent ${fmt.cur(sumSpend)} combined with zero orders, led by "${zeroOrder[0].label}" (${zeroOrder[0].src}, ${fmt.cur(zeroOrder[0].spend)} spent). Pause or restructure these first.`});
+  }
+  const converting = all.filter(r=>r.orders>0);
+  if(converting.length){
+    const bestRoas = [...converting].sort((a,b)=>b.roas-a.roas)[0];
+    items.push({type:'obs', text:`"${bestRoas.label}" (${bestRoas.src}) has the best ROAS at ${fmt.num2(bestRoas.roas)}x — a strong candidate for a bid/budget increase.`});
+    const highAcosBigSpend = [...converting].filter(r=>r.spend > 0).sort((a,b)=>b.spend-a.spend).slice(0,5).sort((a,b)=>b.acos-a.acos)[0];
+    if(highAcosBigSpend && highAcosBigSpend.acos > 35) items.push({type:'act', text:`Among your top-5 spending campaigns, "${highAcosBigSpend.label}" (${highAcosBigSpend.src}) has the weakest efficiency at ${fmt.pct(highAcosBigSpend.acos)} ACOS — worth a bid/keyword audit given its spend level.`});
+  }
+  const bySpend = [...all].sort((a,b)=>b.spend-a.spend)[0];
+  if(bySpend) items.push({type:'obs', text:`"${bySpend.label}" (${bySpend.src}) is the single highest-spending campaign in the account at ${fmt.cur(bySpend.spend)}.`});
+  return items;
+}
+
+function genTargetingInsights(rows){
+  const items = [];
+  const real = rows.filter(r=>r.label!=='Total' && r.clicks>0);
+  if(!real.length) return items;
+  const byRoas = [...real].sort((a,b)=>b.roas-a.roas);
+  items.push({type:'obs', text:`${byRoas[0].label} delivers the best ROAS among all targeting types at ${fmt.num2(byRoas[0].roas)}x.`});
+  const worst = byRoas[byRoas.length-1];
+  if(worst.spend>0 && worst.label !== byRoas[0].label) items.push({type:'act', text:`${worst.label} is the weakest targeting type at ${fmt.num2(worst.roas)}x ROAS / ${fmt.pct(worst.acos)} ACOS — trim bids or prune low-performing targets within it.`});
+  const close = real.find(r=>r.label.includes('Close Match'));
+  const loose = real.find(r=>r.label.includes('Loose Match'));
+  if(close && loose && loose.spend>0 && close.spend>0 && loose.acos > close.acos*1.25){
+    items.push({type:'act', text:`SP Auto Loose Match runs at ${fmt.pct(loose.acos)} ACOS vs ${fmt.pct(close.acos)} for Close Match — harvest converting loose-match search terms into manual exact-match campaigns and pull back loose-match bids.`});
+  }
+  const manualPT = real.find(r=>r.label.includes('Manual: Product Targeting'));
+  const manualKW = real.find(r=>r.label.includes('Manual: Keyword Targeting'));
+  if(manualPT && manualKW && manualPT.spend>0 && manualKW.spend>0){
+    if(manualPT.roas > manualKW.roas*1.2) items.push({type:'obs', text:`Manual Product Targeting (${fmt.num2(manualPT.roas)}x ROAS) is currently outperforming Manual Keyword Targeting (${fmt.num2(manualKW.roas)}x) — consider shifting incremental budget toward product targeting.`});
+    else if(manualKW.roas > manualPT.roas*1.2) items.push({type:'obs', text:`Manual Keyword Targeting (${fmt.num2(manualKW.roas)}x ROAS) is outperforming Manual Product Targeting (${fmt.num2(manualPT.roas)}x) — keyword campaigns look like the stronger lever here.`});
+  }
+  return items;
+}
+
+function genPlacementInsights(rows){
+  const items = [];
+  const real = rows.filter(r=>r.spend>0);
+  if(!real.length) return items;
+  const byAcos = [...real].sort((a,b)=>a.acos-b.acos);
+  const best = byAcos[0], worst = byAcos[byAcos.length-1];
+  items.push({type:'obs', text:`${best.label} is the most efficient placement at ${fmt.pct(best.acos)} ACOS, taking ${fmt.pct(best.spendShare)} of placement spend.`});
+  if(worst.label !== best.label) items.push({type:'act', text:`${worst.label} runs the weakest ACOS at ${fmt.pct(worst.acos)} — consider a negative Top-of-Search / placement bid adjustment to rein this in.`});
+  const tos = real.find(r=>r.label.includes('TOS'));
+  const pdp = real.find(r=>r.label.includes('PDP'));
+  if(tos && pdp && tos.spend>0 && pdp.spend>0){
+    if(tos.roas > pdp.roas) items.push({type:'obs', text:`Top of Search (${fmt.num2(tos.roas)}x ROAS) is outperforming Product Page placements (${fmt.num2(pdp.roas)}x) — a higher Top-of-Search bid adjustment looks justified.`});
+    else items.push({type:'obs', text:`Product Page placements (${fmt.num2(pdp.roas)}x ROAS) are outperforming Top of Search (${fmt.num2(tos.roas)}x) here — don't over-index bids on Top of Search alone.`});
+  }
+  return items;
+}
+
+function genSearchTermInsights(topRoas, topSales, wastedArr, label){
+  const items = [];
+  if(wastedArr.length){
+    const sumSpend = wastedArr.reduce((s,a)=>s+a.spend,0);
+    items.push({type:'act', text:`${label}: ${wastedArr.length} search terms burned ${fmt.cur(sumSpend)} combined with zero orders — start negating "${wastedArr[0].label}" (${fmt.cur(wastedArr[0].spend)} spent, 0 orders).`});
+  } else {
+    items.push({type:'obs', text:`${label}: no zero-order, spend-generating search terms found — search term hygiene looks clean.`});
+  }
+  if(topRoas.length) items.push({type:'act', text:`${label}: "${topRoas[0].label}" converts best at ${fmt.num2(topRoas[0].roas)}x ROAS — if it isn't already a dedicated exact-match target, add it as one.`});
+  if(topSales.length) items.push({type:'obs', text:`${label}: "${topSales[0].label}" is the single largest sales driver at ${fmt.cur(topSales[0].sales)}.`});
+  return items;
+}
+
+function genPortfolioInsights(rows){
+  const items = [];
+  const real = rows.filter(r=>r.label!=='Total' && r.spend>0);
+  if(!real.length) return items;
+  const bySpend = [...real].sort((a,b)=>b.spend-a.spend);
+  items.push({type:'obs', text:`${bySpend[0].label} is the largest portfolio by spend at ${fmt.cur(bySpend[0].spend)} (${fmt.pct(bySpend[0].spendShare)} of total ad spend).`});
+  const byAcos = [...real].sort((a,b)=>b.acos-a.acos);
+  const worst = byAcos[0], best = byAcos[byAcos.length-1];
+  if(worst.label !== best.label){
+    items.push({type:'act', text:`${worst.label} has the highest ACOS among portfolios at ${fmt.pct(worst.acos)} — audit its campaigns and search terms.`});
+    items.push({type:'obs', text:`${best.label} is the most efficient portfolio at ${fmt.pct(best.acos)} ACOS / ${fmt.num2(best.roas)}x ROAS.`});
+  }
+  return items;
+}
+
+
+const TERM_COLS = [
+  {k:'label',h:'Search Term',cls:'left'},
+  {k:'matchType',h:'Match Type',cls:'left'},
+  {k:'campaigns',h:'Campaign(s)',cls:'left campcell'},
+  {k:'impressions',h:'Impressions',f:fmt.int},
+  {k:'clicks',h:'Clicks',f:fmt.int},
+  {k:'spend',h:'Spend',f:fmt.cur},
+  {k:'sales',h:'Sales',f:fmt.cur},
+  {k:'orders',h:'Orders',f:fmt.int},
+  {k:'units',h:'Units',f:fmt.int},
+  {k:'ctr',h:'CTR',f:fmt.pct},
+  {k:'cpc',h:'CPC',f:fmt.cur},
+  {k:'cvr',h:'CVR',f:fmt.pct},
+  {k:'acos',h:'ACOS',f:fmt.pct},
+  {k:'roas',h:'ROAS',f:fmt.num2},
+];
+
+function renderAll(d){
+  // Hero metrics
+  const t = d.totals;
+  document.getElementById('heroRow').innerHTML = `
+    <div class="hero"><div class="lbl">Total Spend</div><div class="val amber">${fmt.cur(t.spend)}</div></div>
+    <div class="hero"><div class="lbl">Total Sales</div><div class="val teal">${fmt.cur(t.sales)}</div></div>
+    <div class="hero"><div class="lbl">Clicks</div><div class="val">${fmt.int(t.clicks)}</div></div>
+    <div class="hero"><div class="lbl">Impressions</div><div class="val">${fmt.int(t.impressions)}</div></div>
+    <div class="hero"><div class="lbl">Orders</div><div class="val">${fmt.int(t.orders)}</div></div>
+    <div class="hero"><div class="lbl">ACOS</div><div class="val ${t.acos>30?'rose':'teal'}">${fmt.pct(t.acos)}</div></div>
+    <div class="hero"><div class="lbl">ROAS</div><div class="val teal">${fmt.num2(t.roas)}</div></div>
+  `;
+
+  renderTable('tbl-overview', d.overviewRows, METRIC_COLS, {totalIndex: d.overviewRows.length-1});
+  renderTable('tbl-spCampPerf', d.spCampPerf, METRIC_COLS, {totalIndex: d.spCampPerf.length-1});
+  renderTable('tbl-sbCampPerf', d.sbCampPerf, METRIC_COLS, {totalIndex: d.sbCampPerf.length-1});
+  renderTable('tbl-sdCampPerf', d.sdCampPerf, METRIC_COLS, {totalIndex: d.sdCampPerf.length-1});
+  renderTable('tbl-targeting', d.targetingRows, METRIC_COLS, {totalIndex: d.targetingRows.length-1});
+  renderTable('tbl-placement', d.placementRows, METRIC_COLS);
+  renderTable('tbl-sp_topRoas', d.sp_topRoas, TERM_COLS);
+  renderTable('tbl-sp_topSales', d.sp_topSales, TERM_COLS);
+  renderTable('tbl-sp_wasted', d.sp_wasted, TERM_COLS);
+  renderTable('tbl-sb_topRoas', d.sb_topRoas, TERM_COLS);
+  renderTable('tbl-sb_topSales', d.sb_topSales, TERM_COLS);
+  renderTable('tbl-sb_wasted', d.sb_wasted, TERM_COLS);
+  renderTable('tbl-portfolio', d.portfolioRows, METRIC_COLS, {totalIndex: d.portfolioRows.length-1});
+
+  renderInsights('insight-overview', genOverviewInsights(d.overviewRows, d.totals));
+  renderInsights('insight-campaign', genCampaignInsights(d.spCampPerf, d.sbCampPerf, d.sdCampPerf));
+  renderInsights('insight-targeting', genTargetingInsights(d.targetingRows));
+  renderInsights('insight-placement', genPlacementInsights(d.placementRows));
+  const stItems = [
+    ...genSearchTermInsights(d.sp_topRoas, d.sp_topSales, d.sp_wasted, 'SP'),
+    ...genSearchTermInsights(d.sb_topRoas, d.sb_topSales, d.sb_wasted, 'SB'),
+  ];
+  renderInsights('insight-searchterms', stItems);
+  renderInsights('insight-portfolio', genPortfolioInsights(d.portfolioRows));
+
+  // KW Intent tables
+  const PIVOT_COLS = [
+    {k:'label',h:'Intent Category',cls:'left'},
+    {k:'totalTerms',h:'# Terms'},
+    {k:'spTerms',h:'SP Terms'},
+    {k:'sbTerms',h:'SB Terms'},
+    {k:'matchTypes',h:'Match Types Used',cls:'left matchtypecell'},
+    {k:'impressions',h:'Impressions',f:fmt.int},
+    {k:'clicks',h:'Clicks',f:fmt.int},
+    {k:'spend',h:'Spend',f:fmt.cur},
+    {k:'sales',h:'Sales',f:fmt.cur},
+    {k:'orders',h:'Orders',f:fmt.int},
+    {k:'ctr',h:'CTR',f:fmt.pct},
+    {k:'cpc',h:'CPC',f:fmt.cur},
+    {k:'cvr',h:'CVR',f:fmt.pct},
+    {k:'acos',h:'ACOS',f:fmt.pct},
+    {k:'roas',h:'ROAS',f:fmt.num2},
+  ];
+  renderTable('tbl-kwPivot', d.kwPivot, PIVOT_COLS, {totalIndex: d.kwPivot.length-1});
+
+  const KW_COLS = [
+    {k:'label',h:'Search Term',cls:'left'},
+    {k:'matchType',h:'Match Type',cls:'left'},
+    {k:'campaigns',h:'Campaign(s)',cls:'left campcell'},
+    {k:'impressions',h:'Impr.',f:fmt.int},
+    {k:'clicks',h:'Clicks',f:fmt.int},
+    {k:'spend',h:'Spend',f:fmt.cur},
+    {k:'sales',h:'Sales',f:fmt.cur},
+    {k:'orders',h:'Orders',f:fmt.int},
+    {k:'ctr',h:'CTR',f:fmt.pct},
+    {k:'cpc',h:'CPC',f:fmt.cur},
+    {k:'cvr',h:'CVR',f:fmt.pct},
+    {k:'acos',h:'ACOS',f:fmt.pct},
+    {k:'roas',h:'ROAS',f:fmt.num2},
+  ];
+  ['sp','sb'].forEach(p=>{
+    ['brand','comp','generic','pt'].forEach(cat=>{
+      renderTable(`tbl-${p}_${cat}`, d[`${p}_${cat}`].slice(0,100), KW_COLS);
+    });
+    const counts = {brand:d[`${p}_brand`].length, comp:d[`${p}_comp`].length, generic:d[`${p}_generic`].length, pt:d[`${p}_pt`].length};
+    Object.entries(counts).forEach(([cat,n])=>{
+      const el = document.getElementById(`${p}-${cat}-count`);
+      if(el) el.textContent = n+' terms';
+    });
+  });
+  renderInsights('insight-kwintent', genKWIntentInsights(d.kwPivot, d.brandName));
+}
+
+/* ============================== EXPORT MAP ============================== */
+function getExportSpec(key){
+  switch(key){
+    case 'overview': return {rows:DATA.overviewRows, cols:METRIC_COLS, name:'performance_summary.csv'};
+    case 'spCampPerf': return {rows:DATA.spCampPerf, cols:METRIC_COLS, name:'sp_campaign_performance.csv'};
+    case 'sbCampPerf': return {rows:DATA.sbCampPerf, cols:METRIC_COLS, name:'sb_campaign_performance.csv'};
+    case 'sdCampPerf': return {rows:DATA.sdCampPerf, cols:METRIC_COLS, name:'sd_campaign_performance.csv'};
+    case 'targeting': return {rows:DATA.targetingRows, cols:METRIC_COLS, name:'targeting_summary.csv'};
+    case 'placement': return {rows:DATA.placementRows, cols:METRIC_COLS, name:'placement_summary.csv'};
+    case 'portfolio': return {rows:DATA.portfolioRows, cols:METRIC_COLS, name:'portfolio_summary.csv'};
+    case 'sp_topRoas': return {rows:DATA.sp_topRoas, cols:TERM_COLS, name:'sp_top_roas_terms.csv'};
+    case 'sp_topSales': return {rows:DATA.sp_topSales, cols:TERM_COLS, name:'sp_top_sales_terms.csv'};
+    case 'sp_wasted': return {rows:DATA.sp_wasted, cols:TERM_COLS, name:'sp_wasted_terms.csv'};
+    case 'sb_topRoas': return {rows:DATA.sb_topRoas, cols:TERM_COLS, name:'sb_top_roas_terms.csv'};
+    case 'sb_topSales': return {rows:DATA.sb_topSales, cols:TERM_COLS, name:'sb_top_sales_terms.csv'};
+    case 'sb_wasted': return {rows:DATA.sb_wasted, cols:TERM_COLS, name:'sb_wasted_terms.csv'};
+    case 'kwPivot': return {rows:DATA.kwPivot, cols:[
+      {k:'label',h:'Intent Category'},{k:'totalTerms',h:'Total Terms'},{k:'spTerms',h:'SP Terms'},{k:'sbTerms',h:'SB Terms'},
+      {k:'matchTypes',h:'Match Types Used'},
+      {k:'impressions',h:'Impressions'},{k:'clicks',h:'Clicks'},{k:'spend',h:'Spend'},{k:'sales',h:'Sales'},
+      {k:'orders',h:'Orders'},{k:'ctr',h:'CTR'},{k:'cpc',h:'CPC'},{k:'cvr',h:'CVR'},{k:'acos',h:'ACOS'},{k:'roas',h:'ROAS'},
+    ], name:'kw_intent_pivot.csv'};
+    case 'sp_brand': return {rows:DATA.sp_brand, cols:TERM_COLS, name:'sp_brand_kw.csv'};
+    case 'sp_comp':  return {rows:DATA.sp_comp,  cols:TERM_COLS, name:'sp_competitor_kw.csv'};
+    case 'sp_generic': return {rows:DATA.sp_generic, cols:TERM_COLS, name:'sp_generic_kw.csv'};
+    case 'sp_pt':    return {rows:DATA.sp_pt,    cols:TERM_COLS, name:'sp_product_targeting_kw.csv'};
+    case 'sb_brand': return {rows:DATA.sb_brand, cols:TERM_COLS, name:'sb_brand_kw.csv'};
+    case 'sb_comp':  return {rows:DATA.sb_comp,  cols:TERM_COLS, name:'sb_competitor_kw.csv'};
+    case 'sb_generic': return {rows:DATA.sb_generic, cols:TERM_COLS, name:'sb_generic_kw.csv'};
+    case 'sb_pt':    return {rows:DATA.sb_pt,    cols:TERM_COLS, name:'sb_product_targeting_kw.csv'};
+  }
+}
+
+document.querySelectorAll('.miniexport').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const spec = getExportSpec(btn.dataset.export);
+    if(spec) exportCSV(spec.rows, spec.cols, spec.name);
+  });
+});
+
+/* ============================== STYLED EXCEL EXPORT ============================== */
+
+// ── Palette (matches dashboard dark theme) ────────────────────────────────────
+const XL = {
+  BG_HEADER:  '1C222D', BG_TOTAL:   '141A22', BG_OBS:    '0D2B26',
+  BG_ACT:     '2D1F0A', BG_ROW1:    '161B24', BG_ROW2:   '0E1117',
+  BG_TITLE:   '12161E', BG_GOOD:    '0D3320', BG_WARN:   '2D2208',
+  BG_BAD:     '2D0D12',
+  FG_TEAL:    'FF22B8A3', FG_AMBER:  'FFF0A93C', FG_ROSE:  'FFE2627A',
+  FG_MUTED:   'FF8B93A3', FG_WHITE:  'FFE7EAF0', FG_TOTAL: 'FF22B8A3',
+  FG_OBS:     'FF22B8A3', FG_ACT:    'FFF0A93C', FG_PURPLE:'FFA78BFA',
+  FG_GREEN:   'FF22B8A3', FG_RED:    'FFE2627A', FG_GOLD:  'FFF0A93C',
+};
+
+function xlFill(hex6){ return { patternType:'solid', fgColor:{rgb: hex6}, bgColor:{rgb: hex6} }; }
+function xlFont(rgb, bold=false, sz=10){ return { name:'Arial', sz, bold, color:{rgb} }; }
+function xlBorder(hex6='262D3A'){
+  const s = { style:'thin', color:{rgb:hex6} };
+  return { top:s, bottom:s, left:s, right:s };
+}
+function xlAlign(h='center', wrap=false){ return { horizontal:h, vertical:'center', wrapText:wrap }; }
+
+// Build a styled cell
+function SC(v, bgHex, fgRgb, bold=false, sz=10, hAlign='center', wrap=false, numFmt=''){
+  const cell = { v, t: typeof v==='number'?'n':'s',
+    s:{ fill:xlFill(bgHex), font:xlFont(fgRgb,bold,sz),
+        border:xlBorder(), alignment:xlAlign(hAlign,wrap) }};
+  if(numFmt) cell.z = numFmt;
+  return cell;
+}
+
+// Header cell
+function HC(label){ return SC(label, XL.BG_HEADER, XL.FG_MUTED, true, 9, 'center'); }
+
+// Data cell (alternating rows, optional total)
+function DC(v, isTotal, isAlt, numFmt='', colIdx=0){
+  const bg   = isTotal ? XL.BG_TOTAL : (isAlt ? XL.BG_ROW1 : XL.BG_ROW2);
+  const fg   = isTotal ? XL.FG_TOTAL : XL.FG_WHITE;
+  const bold = isTotal;
+  const h    = colIdx===0 ? 'left' : 'center';
+  return SC(v, bg, fg, bold, 9, h, false, numFmt);
+}
+
+// ACOS cell — colour-coded green / amber / red
+function ACOSC(v, isTotal, isAlt){
+  const bg = v===0||v==null ? (isTotal?XL.BG_TOTAL:isAlt?XL.BG_ROW1:XL.BG_ROW2)
+           : v < 20  ? XL.BG_GOOD
+           : v < 35  ? XL.BG_WARN
+           :            XL.BG_BAD;
+  const fg = v===0||v==null ? XL.FG_MUTED
+           : v < 20  ? XL.FG_GREEN
+           : v < 35  ? XL.FG_GOLD
+           :            XL.FG_RED;
+  return SC(v==null?0:v, bg, fg, true, 9, 'center', false, '0.0"%"');
+}
+
+// ROAS cell
+function ROASC(v, isTotal, isAlt){
+  const bg = v===0||v==null ? (isTotal?XL.BG_TOTAL:isAlt?XL.BG_ROW1:XL.BG_ROW2)
+           : v >= 4   ? XL.BG_GOOD
+           : v >= 2   ? XL.BG_WARN
+           :             XL.BG_BAD;
+  const fg = v===0||v==null ? XL.FG_MUTED
+           : v >= 4   ? XL.FG_GREEN
+           : v >= 2   ? XL.FG_GOLD
+           :             XL.FG_RED;
+  return SC(v==null?0:v, bg, fg, true, 9, 'center', false, '0.00"x"');
+}
+
+// Insight rows (OBS = teal, ACT = amber)
+function insightTitleRow(text, ncols){
+  const cells = [SC('💡 '+text, XL.BG_HEADER, XL.FG_TEAL, true, 11, 'left')];
+  for(let i=1;i<ncols;i++) cells.push(SC('', XL.BG_HEADER, XL.FG_TEAL, false, 9));
+  return { cells, merge: ncols };
+}
+
+function insightRow(item, ncols){
+  const isAct = item.type==='act';
+  const tag   = isAct ? '⚡ ACTION' : '🔍 INSIGHT';
+  const bg    = isAct ? XL.BG_ACT  : XL.BG_OBS;
+  const fg    = isAct ? XL.FG_ACT  : XL.FG_OBS;
+  const tagCell = SC(tag, bg, fg, true, 9, 'center');
+  const txtCell = SC(item.text, XL.BG_TITLE, XL.FG_WHITE, false, 9, 'left', true);
+  const rest = [];
+  for(let i=2;i<ncols;i++) rest.push(SC('', XL.BG_TITLE, XL.FG_WHITE, false, 9));
+  return { tagCell, txtCell, rest, mergeFrom:2, ncols };
+}
+
+// Build worksheet from aoa of styled cells
+function buildWS(rows2d, colWidths){
+  const ws = {};
+  let maxCol = 0;
+  rows2d.forEach((row, ri)=>{
+    if(!row) return;
+    row.forEach((cell, ci)=>{
+      if(!cell) return;
+      const addr = XLSX.utils.encode_cell({r:ri, c:ci});
+      ws[addr] = cell;
+      if(ci>maxCol) maxCol=ci;
+    });
+  });
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:rows2d.length-1,c:maxCol}});
+  ws['!cols'] = colWidths.map(w=>({wch:w}));
+  return ws;
+}
+
+// Push a sheet with merges tracked separately
+function buildWSWithMerges(aoa, mergeList, colWidths){
+  const ws = buildWS(aoa, colWidths);
+  if(mergeList.length) ws['!merges'] = mergeList;
+  return ws;
+}
+
+// num formats for METRIC_COLS / TERM_COLS columns
+const COL_FMT = {
+  impressions:'#,##0', clicks:'#,##0', spend:'"₹"#,##0.00', sales:'"₹"#,##0.00',
+  orders:'#,##0', units:'#,##0', ctr:'0.0"%"', cpc:'"₹"#,##0.00',
+  cvr:'0.0"%"', acos:'0.0"%"', roas:'0.00"x"',
+  saleShare:'0.0"%"', spendShare:'0.0"%"',
+};
+
+function fmtForKey(k){ return COL_FMT[k]||''; }
+
+// Core builder: takes insights array + rows + cols, returns {aoa, merges, colWidths}
+function buildStyledSheet(sheetTitle, accentRgb, insightItems, dataRows, cols, isTotalLast=false){
+  const ncols = cols.length;
+  const merges = [];
+  const aoa = [];
+  let r = 0;
+
+  // Title row
+  const titleRow = Array(ncols).fill(SC('', XL.BG_TITLE, XL.FG_WHITE));
+  titleRow[0] = SC('💡 '+sheetTitle, XL.BG_HEADER, accentRgb, true, 13, 'left');
+  aoa.push(titleRow);
+  merges.push({s:{r,c:0}, e:{r,c:ncols-1}});
+  r++;
+
+  // Insights section header
+  const insHdr = Array(ncols).fill(SC('', XL.BG_HEADER, XL.FG_TEAL));
+  insHdr[0] = SC('📋  OBSERVATIONS & ACTIONABLES', XL.BG_HEADER, XL.FG_TEAL, true, 10, 'left');
+  aoa.push(insHdr);
+  merges.push({s:{r,c:0}, e:{r,c:ncols-1}});
+  r++;
+
+  // Each insight
+  insightItems.forEach(item=>{
+    const isAct = item.type==='act';
+    const bg    = isAct ? XL.BG_ACT : XL.BG_OBS;
+    const fg    = isAct ? XL.FG_ACT : XL.FG_OBS;
+    const tag   = isAct ? '⚡ ACTION' : '🔍 INSIGHT';
+    const row   = Array(ncols).fill(SC('', XL.BG_TITLE, XL.FG_WHITE));
+    row[0] = SC(tag, bg, fg, true, 9, 'center');
+    row[1] = SC(item.text, XL.BG_TITLE, XL.FG_WHITE, false, 9, 'left', true);
+    aoa.push(row);
+    if(ncols>2) merges.push({s:{r,c:1}, e:{r,c:ncols-1}});
+    r++;
+  });
+
+  // Blank spacer
+  aoa.push(Array(ncols).fill(SC('', XL.BG_ROW2, XL.FG_WHITE)));
+  r++;
+
+  // Column header row
+  aoa.push(cols.map(c=> HC(c.h||c.k)));
+  r++;
+
+  // Data rows
+  dataRows.forEach((rowData, ri)=>{
+    const isTotal = isTotalLast && ri===dataRows.length-1;
+    const isAlt   = ri%2===1;
+    const cells   = cols.map((c,ci)=>{
+      const v = rowData[c.k];
+      const num = (v===undefined||v===null) ? 0 : v;
+      if(c.k==='acos') return ACOSC(isTotal?null:num, isTotal, isAlt);
+      if(c.k==='roas') return ROASC(isTotal?null:num, isTotal, isAlt);
+      const nf = fmtForKey(c.k);
+      const cell = DC(num, isTotal, isAlt, nf, ci);
+      return cell;
+    });
+    aoa.push(cells);
+    r++;
+  });
+
+  // Auto column widths
+  const colWidths = cols.map((c,i)=>{
+    if(i===0) return 38;
+    if(['label','campaigns','matchType'].includes(c.k)) return 32;
+    return 14;
+  });
+
+  return {aoa, merges, colWidths};
+}
+
+document.getElementById('exportAllBtn').addEventListener('click', ()=>{
+  if(!DATA.overviewRows) return;
+
+  const wb = XLSX.utils.book_new();
+
+  function addStyledSheet(title, accentRgb, insightFn, dataRows, cols, isTotalLast, sheetName){
+    const insights = insightFn();
+    const {aoa, merges, colWidths} = buildStyledSheet(title, accentRgb, insights, dataRows, cols, isTotalLast);
+    const ws = buildWSWithMerges(aoa, merges, colWidths);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0,31));
+  }
+
+  // 1 — Performance Summary
+  addStyledSheet(
+    'Performance Summary', XL.FG_TEAL,
+    ()=> genOverviewInsights(DATA.overviewRows, DATA.totals),
+    DATA.overviewRows, METRIC_COLS, true, 'Performance Summary'
+  );
+
+  // 2 — SP Campaign Performance
+  addStyledSheet(
+    'SP Campaign Performance', XL.FG_AMBER,
+    ()=> genCampaignInsights(DATA.spCampPerf, DATA.sbCampPerf, DATA.sdCampPerf),
+    DATA.spCampPerf, METRIC_COLS, true, 'SP Campaign Performance'
+  );
+
+  // 3 — SB Campaign Performance
+  addStyledSheet(
+    'SB Campaign Performance', XL.FG_AMBER,
+    ()=> genCampaignInsights(DATA.spCampPerf, DATA.sbCampPerf, DATA.sdCampPerf),
+    DATA.sbCampPerf, METRIC_COLS, true, 'SB Campaign Performance'
+  );
+
+  // 4 — SD Campaign Performance
+  addStyledSheet(
+    'SD Campaign Performance', XL.FG_AMBER,
+    ()=> genCampaignInsights(DATA.spCampPerf, DATA.sbCampPerf, DATA.sdCampPerf),
+    DATA.sdCampPerf, METRIC_COLS, true, 'SD Campaign Performance'
+  );
+
+  // 5 — Targeting Summary
+  addStyledSheet(
+    'Targeting Summary', XL.FG_PURPLE,
+    ()=> genTargetingInsights(DATA.targetingRows),
+    DATA.targetingRows, METRIC_COLS, true, 'Targeting Summary'
+  );
+
+  // 6 — Placement Summary
+  addStyledSheet(
+    'Placement Summary', XL.FG_ROSE,
+    ()=> genPlacementInsights(DATA.placementRows),
+    DATA.placementRows, METRIC_COLS, false, 'Placement Summary'
+  );
+
+  // 7 — Portfolio Summary
+  addStyledSheet(
+    'Portfolio Summary', XL.FG_TEAL,
+    ()=> genPortfolioInsights(DATA.portfolioRows),
+    DATA.portfolioRows, METRIC_COLS, true, 'Portfolio Summary'
+  );
+
+  // 8 — SP Search Terms (combined: top ROAS + top Sales + wasted, each sub-sectioned)
+  const spSTInsights = genSearchTermInsights(DATA.sp_topRoas, DATA.sp_topSales, DATA.sp_wasted, 'SP');
+  const sbSTInsights = genSearchTermInsights(DATA.sb_topRoas, DATA.sb_topSales, DATA.sb_wasted, 'SB');
+  const allSTInsights = [...spSTInsights, ...sbSTInsights];
+
+  function addSearchTermSheet(title, accentRgb, insights, topRoas, topSales, wasted, sheetName){
+    const ncols = TERM_COLS.length;
+    const merges = [];
+    const aoa = [];
+    let r = 0;
+
+    // Title
+    const tRow = Array(ncols).fill(SC('', XL.BG_HEADER, accentRgb));
+    tRow[0] = SC('💡 '+title, XL.BG_HEADER, accentRgb, true, 13, 'left');
+    aoa.push(tRow); merges.push({s:{r,c:0},e:{r,c:ncols-1}}); r++;
+
+    // Insights header
+    const iHdr = Array(ncols).fill(SC('', XL.BG_HEADER, XL.FG_TEAL));
+    iHdr[0] = SC('📋  OBSERVATIONS & ACTIONABLES', XL.BG_HEADER, XL.FG_TEAL, true, 10, 'left');
+    aoa.push(iHdr); merges.push({s:{r,c:0},e:{r,c:ncols-1}}); r++;
+
+    insights.forEach(item=>{
+      const isAct = item.type==='act';
+      const bg = isAct ? XL.BG_ACT : XL.BG_OBS;
+      const fg = isAct ? XL.FG_ACT : XL.FG_OBS;
+      const tag = isAct ? '⚡ ACTION' : '🔍 INSIGHT';
+      const row = Array(ncols).fill(SC('', XL.BG_TITLE, XL.FG_WHITE));
+      row[0] = SC(tag, bg, fg, true, 9, 'center');
+      row[1] = SC(item.text, XL.BG_TITLE, XL.FG_WHITE, false, 9, 'left', true);
+      aoa.push(row); if(ncols>2) merges.push({s:{r,c:1},e:{r,c:ncols-1}}); r++;
+    });
+    aoa.push(Array(ncols).fill(SC('', XL.BG_ROW2, XL.FG_WHITE))); r++;
+
+    function addSubSection(subTitle, fgColor, rows){
+      const sHdr = Array(ncols).fill(SC('', XL.BG_HEADER, fgColor));
+      sHdr[0] = SC(subTitle, XL.BG_HEADER, fgColor, true, 10, 'left');
+      aoa.push(sHdr); merges.push({s:{r,c:0},e:{r,c:ncols-1}}); r++;
+      aoa.push(TERM_COLS.map(c=>HC(c.h||c.k))); r++;
+      rows.forEach((rowData,ri)=>{
+        const isAlt = ri%2===1;
+        const cells = TERM_COLS.map((c,ci)=>{
+          const v = rowData[c.k]; const num=(v===undefined||v===null)?0:v;
+          if(c.k==='acos') return ACOSC(num, false, isAlt);
+          if(c.k==='roas') return ROASC(num, false, isAlt);
+          return DC(num, false, isAlt, fmtForKey(c.k), ci);
+        });
+        aoa.push(cells); r++;
+      });
+      aoa.push(Array(ncols).fill(SC('', XL.BG_ROW2, XL.FG_WHITE))); r++;
+    }
+
+    addSubSection('⭐  TOP 40 BY ROAS (terms with orders)', XL.FG_TEAL, topRoas);
+    addSubSection('💰  TOP 40 BY SALES', XL.FG_AMBER, topSales);
+    addSubSection('🚨  WASTED SPEND — zero orders (top 60)', XL.FG_ROSE, wasted);
+
+    const colWidths = TERM_COLS.map((c,i)=> i===0?42 : c.k==='campaigns'?35 : c.k==='matchType'?18 : 13);
+    const ws = buildWSWithMerges(aoa, merges, colWidths);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0,31));
+  }
+
+  addSearchTermSheet(
+    'SP Search Term Analysis', XL.FG_TEAL, spSTInsights,
+    DATA.sp_topRoas, DATA.sp_topSales, DATA.sp_wasted, 'SP Search Terms'
+  );
+  addSearchTermSheet(
+    'SB Search Term Analysis', XL.FG_AMBER, sbSTInsights,
+    DATA.sb_topRoas, DATA.sb_topSales, DATA.sb_wasted, 'SB Search Terms'
+  );
+
+  // 9 — KW Intent Pivot
+  const PIVOT_COLS_EXP = [
+    {k:'label',h:'Intent Category'},{k:'totalTerms',h:'Total Terms'},{k:'spTerms',h:'SP Terms'},
+    {k:'sbTerms',h:'SB Terms'},{k:'matchTypes',h:'Match Types Used'},
+    {k:'impressions',h:'Impressions'},{k:'clicks',h:'Clicks'},{k:'spend',h:'Spend'},
+    {k:'sales',h:'Sales'},{k:'orders',h:'Orders'},{k:'ctr',h:'CTR'},{k:'cpc',h:'CPC'},
+    {k:'cvr',h:'CVR'},{k:'acos',h:'ACOS'},{k:'roas',h:'ROAS'},
+  ];
+  addStyledSheet(
+    'KW Intent Analysis', XL.FG_PURPLE,
+    ()=> genKWIntentInsights(DATA.kwPivot, DATA.brandName),
+    DATA.kwPivot, PIVOT_COLS_EXP, true, 'KW Intent Pivot'
+  );
+
+  // 10-13 — KW Intent breakdowns
+  const intentSheets = [
+    {key:'sp_brand', label:'SP Brand KW', accent:XL.FG_TEAL},
+    {key:'sp_comp',  label:'SP Competitor KW', accent:XL.FG_AMBER},
+    {key:'sp_generic', label:'SP Generic KW', accent:XL.FG_ROSE},
+    {key:'sp_pt',    label:'SP Product Targeting KW', accent:XL.FG_PURPLE},
+    {key:'sb_brand', label:'SB Brand KW', accent:XL.FG_TEAL},
+    {key:'sb_comp',  label:'SB Competitor KW', accent:XL.FG_AMBER},
+    {key:'sb_generic',label:'SB Generic KW', accent:XL.FG_ROSE},
+    {key:'sb_pt',    label:'SB Product Targeting KW', accent:XL.FG_PURPLE},
+  ];
+  intentSheets.forEach(({key, label, accent})=>{
+    if(DATA[key] && DATA[key].length){
+      addStyledSheet(label, accent, ()=>[], DATA[key], TERM_COLS, false, label);
+    }
+  });
+
+  XLSX.writeFile(wb, 'PPC_Bulk_Report_With_Insights.xlsx');
+});
+
+/* ============================== NAV ============================== */
+document.querySelectorAll('#rail button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#rail button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+document.querySelectorAll('#campProductTabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#campProductTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.campblock').forEach(b=> b.style.display='none');
+    document.getElementById('camp-'+btn.dataset.camp).style.display='block';
+  });
+});
+document.querySelectorAll('#stProductTabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#stProductTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.stblock').forEach(b=> b.style.display='none');
+    document.getElementById('st-'+btn.dataset.st).style.display='block';
+  });
+});
+document.querySelectorAll('#kwProductTabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#kwProductTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.kwblock').forEach(b=> b.style.display='none');
+    document.getElementById('kw-'+btn.dataset.kw).style.display='block';
+  });
+});
+
+/* ============================== FILE LOAD ============================== */
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('fileMeta').textContent = 'Parsing '+file.name+' …';
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      DATA = computeAll(wb);
+      renderAll(DATA);
+      document.getElementById('emptyState').style.display='none';
+      document.getElementById('views').style.display='block';
+      document.getElementById('exportAllBtn').disabled = false;
+      document.getElementById('fileMeta').textContent = file.name+' loaded';
+    }catch(err){
+      console.error(err);
+      document.getElementById('fileMeta').textContent = 'Error parsing file — see console';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+</script>
+</body>
+</html>
